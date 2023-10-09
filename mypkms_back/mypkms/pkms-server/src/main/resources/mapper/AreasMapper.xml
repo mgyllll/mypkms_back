@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xxx.server.mapper.AreasMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.xxx.server.pojo.Areas">
+        <id column="AreaID" property="AreaID" />
+        <result column="AreaName" property="AreaName" />
+        <result column="PYCode" property="PYCode" />
+        <result column="Zip" property="Zip" />
+        <result column="PhoneCode" property="PhoneCode" />
+        <result column="ParentnodeID" property="ParentnodeID" />
+        <result column="IsparentFlag" property="IsparentFlag" />
+        <result column="Ancester" property="Ancester" />
+        <result column="level" property="level" />
+    </resultMap>
+
+    <resultMap id="Areas" type="com.xxx.server.pojo.Areas" extends="BaseResultMap">
+        <collection property="children" ofType="com.xxx.server.pojo.Areas">
+            <id column="AreaID2" property="AreaID" />
+            <result column="AreaName2" property="AreaName" />
+            <result column="ParentnodeID2" property="ParentnodeID" />
+            <result column="IsparentFlag2" property="IsparentFlag" />
+            <result column="level2" property="level" />
+            <result column="Ancester2" property="Ancester" />
+        </collection>
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        AreaID, AreaName, PYCode, Zip, PhoneCode, ParentnodeID, IsparentFlag, Ancester, level
+    </sql>
+
+    <!--查询地区列表-->
+    <select id="getAreas" resultMap="Areas">
+        SELECT
+            a.*,
+            b.AreaID AS AreaID2,
+            b.AreaName AS AreaName2,
+            b.parentNodeID AS parentNodeID2,
+            b.IsParentFlag AS IsParentFlag2,
+            b.level AS level2,
+            b.Ancester AS Ancester2
+        FROM
+            t_areas a,
+            t_areas b
+        WHERE
+            a.areaid=b.ParentNodeID;
+    </select>
+
+</mapper>

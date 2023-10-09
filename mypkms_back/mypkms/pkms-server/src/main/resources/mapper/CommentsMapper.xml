@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xxx.server.mapper.CommentsMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.xxx.server.pojo.Comments">
+        <id column="CommentID" property="CommentID" />
+        <result column="ReviewerID" property="ReviewerID" />
+        <result column="ReviewerName" property="ReviewerName" />
+        <result column="Photo" property="Photo" />
+        <result column="ResourceID" property="ResourceID" />
+        <result column="CommentLength" property="CommentLength" />
+        <result column="CommentContent" property="CommentContent" />
+        <result column="CreatedDate" property="CreatedDate" />
+        <result column="ParentCommentID" property="ParentCommentID" />
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        CommentID, ReviewerID, ReviewerName, Photo, ResourceID, CommentLength, CommentContent, CreatedDate, ParentCommentID
+    </sql>
+
+
+    <select id="getCommentsByResourceId" resultType="com.xxx.server.pojo.Comments">
+        SELECT
+            a.*,
+            (select count(*) from t_likeComments where CommentID = a.CommentID) as countLikes,
+            CASE
+                WHEN (select count(*) from t_likeComments where CommentID =a.CommentID and LikerID = #{userId})>0 then 'true'
+                ELSE 'false'
+                END as liked
+        FROM
+            t_comments a
+        WHERE
+            ResourceID = #{resourceId};
+    </select>
+
+    <!--  新增评论  -->
+    <select id="addComment" statementType="CALLABLE">
+        call p_addComment(
+            #{ReviewerID, mode=IN, jdbcType=INTEGER},
+            #{ResourceID, mode=IN, jdbcType=BIGINT},
+            #{CommentContent, mode=IN, jdbcType=VARCHAR},
+            #{result, mode=OUT, jdbcType=INTEGER}
+        );
+    </select>
+
+    <!--  点赞评论  -->
+    <select id="likeComment" statementType="CALLABLE">
+        call p_likeComment(
+            #{userID, mode=IN, jdbcType=INTEGER},
+            #{commentID, mode=IN, jdbcType=BIGINT}
+        );
+    </select>
+
+</mapper>

@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xxx.server.mapper.ResourcesMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.xxx.server.pojo.Resources">
+        <id column="ResourceID" property="ResourceID" />
+        <result column="Titile" property="Titile" />
+        <result column="CategoryID" property="CategoryID" />
+        <result column="UserID" property="UserID" />
+        <result column="Tag" property="Tag" />
+        <result column="CreateDate" property="CreateDate" />
+        <result column="LastModifyDate" property="LastModifyDate" />
+        <result column="Description" property="Description" />
+        <result column="isShared" property="isShared" />
+        <result column="Audited" property="Audited" />
+        <result column="Auditor" property="Auditor" />
+        <result column="AuditorName" property="AuditorName" />
+        <result column="AuditTime" property="AuditTime" />
+        <result column="AuditOpinion" property="AuditOpinion" />
+        <result column="photo" property="photo" />
+        <result column="ReadingQuantity" property="ReadingQuantity" />
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        ResourceID, Titile, CategoryID, UserID, Tag, CreateDate, LastModifyDate, Description, isShared, Audited, Auditor, AuditorName, AuditTime, AuditOpinion, photo, ReadingQuantity
+    </sql>
+
+    <!--  根据用户UserID和类别CategoryID获取资源列表  -->
+    <select id="getResourcesByUserIdAndCategoryId" resultType="com.xxx.server.pojo.Resources">
+          SELECT
+            *
+          FROM
+            t_resources
+          WHERE
+            UserID=#{userID}
+          AND
+            Audited = 1
+          AND
+            CategoryID like concat(#{categoryID},'%');
+    </select>
+
+    <!--  根据用户UserID获取资源列表  -->
+    <select id="getResourcesByUserId" resultType="com.xxx.server.pojo.Resources">
+        SELECT
+            *
+        FROM
+            t_resources
+        <if test="all == 0">
+        WHERE
+            UserID=#{userID}
+        </if>
+    </select>
+
+    <!--  新增资源  -->
+    <select id="addRes" statementType="CALLABLE">
+        call p_addRes(  #{Titile, mode=IN, jdbcType=VARCHAR},
+                        #{CategoryID, mode=IN, jdbcType=VARCHAR},
+                        #{UserID, mode=IN, jdbcType=INTEGER},
+                        #{Tag, mode=IN, jdbcType=VARCHAR},
+                        #{Description, mode=IN, jdbcType=VARCHAR},
+                        #{isShared, mode=IN, jdbcType=VARCHAR},
+                        #{photo, mode=IN, jdbcType=VARCHAR},
+                        #{result, mode=OUT, jdbcType=INTEGER},
+                        #{ResourceID, mode=OUT, jdbcType=BIGINT});
+    </select>
+
+    <!--  更新资源  -->
+    <select id="updateRes" statementType="CALLABLE">
+       call p_updateRes(#{ResourceID, mode=IN, jdbcType=BIGINT},
+                        #{Titile, mode=IN, jdbcType=VARCHAR},
+                        #{CategoryID, mode=IN, jdbcType=VARCHAR},
+                        #{Tag, mode=IN, jdbcType=VARCHAR},
+                        #{Description, mode=IN, jdbcType=VARCHAR},
+                        #{isShared, mode=IN, jdbcType=VARCHAR},
+                        #{photo, mode=IN, jdbcType=VARCHAR},
+                        #{result, mode=OUT, jdbcType=INTEGER});
+    </select>
+
+    <!--  关键词keyword查询共享资源  -->
+    <select id="getResourcesByKeyword" resultType="com.xxx.server.pojo.Resources">
+          SELECT
+                b.username,
+                b.gender,
+                b.photo as avatar,
+                a.*,
+                (select count(*) from t_likeRess where ResourceID = a.ResourceID) as countLikes,
+                CASE
+                    WHEN (select count(*) from t_likeRess where ResourceID = a.ResourceID and LikerID = #{userId})>0 then 'true'
+                    ELSE 'false'
+                END as liked
+            FROM
+                t_resources a
+            LEFT JOIN
+                t_user b
+            ON
+                a.userID =b.userID
+            WHERE
+                a.isShared = 'true'
+            AND
+                a.Audited = 1
+            AND
+                concat(b.username, '#', a.titile, '#', a.tag, '#', a.description) like concat('%', #{keyword}, '%');
+    </select>
+
+    <!--  资源审核 -->
+    <select id="auditRes" statementType="CALLABLE">
+       call p_auditRes( #{ResourceID, mode=IN, jdbcType=BIGINT},
+                        #{Audited, mode=IN, jdbcType=INTEGER},
+                        #{Auditor, mode=IN, jdbcType=INTEGER},
+                        #{AuditOpinion, mode=IN, jdbcType=VARCHAR},
+                        #{result, mode=OUT, jdbcType=INTEGER});
+    </select>
+
+    <!--  点赞知识  -->
+    <select id="likeRes" statementType="CALLABLE">
+        call p_likeRes(
+            #{userID, mode=IN, jdbcType=INTEGER},
+            #{resourceID, mode=IN, jdbcType=BIGINT}
+        );
+    </select>
+
+    <!--  阅读量  -->
+    <select id="readRes" statementType="CALLABLE">
+        call p_readingQuantity(
+            #{resourceID, mode=IN, jdbcType=BIGINT}
+        );
+    </select>
+
+</mapper>

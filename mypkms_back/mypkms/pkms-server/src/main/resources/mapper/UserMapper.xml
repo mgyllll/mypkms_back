@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xxx.server.mapper.UserMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.xxx.server.pojo.User">
+        <id column="UserID" property="UserID" />
+        <result column="UserName" property="UserName" />
+        <result column="Password" property="Password" />
+        <result column="BirthDate" property="BirthDate" />
+        <result column="Age" property="Age" />
+        <result column="Gender" property="Gender" />
+        <result column="Phone" property="Phone" />
+        <result column="Email" property="Email" />
+        <result column="QQ" property="qq" />
+        <result column="WeChat" property="WeChat" />
+        <result column="Address" property="Address" />
+        <result column="City" property="City" />
+        <result column="Zip" property="Zip" />
+        <result column="RoleType" property="RoleType" />
+        <result column="Photo" property="Photo" />
+        <result column="Notes" property="Notes" />
+    </resultMap>
+
+    <resultMap id="UserWithRole" type="com.xxx.server.pojo.User" extends="BaseResultMap">
+        <collection property="roles" ofType="com.xxx.server.pojo.Role">
+            <id column="roleType" property="roleType" />
+            <result column="roleName" property="roleName" />
+        </collection>
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        UserID, UserName, Password, BirthDate, Age, Gender, Phone, Email, QQ, WeChat, Address, City, Zip, RoleType, Photo, Notes
+    </sql>
+
+    <!-- 获取所有用户 -->
+    <select id="getAllUsers" resultMap="UserWithRole">
+        SELECT
+            *
+        FROM
+            t_user a
+        LEFT JOIN t_role b
+        ON
+            a.roletype = b.roletype
+        WHERE
+            a.userid != #{userID}
+            <if test="null!=keywords and ''!=keywords" >
+                AND concat(userid, '#', username, '#', birthdate, '#', gender, '#',  phone, '#', email, '#', qq, '#', wechat, '#',  address) LIKE concat('%', #{keywords}, '%')
+            </if>
+        ORDER BY a.UserID;
+    </select>
+
+    <!--  添加用户  -->
+    <select id="addUser" statementType="CALLABLE">
+        CALL p_addUser( #{UserName, mode=IN, jdbcType=VARCHAR},
+                        #{Password, mode=IN, jdbcType=VARCHAR},
+                        #{BirthDate, mode=IN, jdbcType=VARCHAR},
+                        #{Gender, mode=IN, jdbcType=VARCHAR},
+                        #{Phone, mode=IN, jdbcType=VARCHAR},
+                        #{Email, mode=IN, jdbcType=VARCHAR},
+                        #{qq, mode=IN, jdbcType=VARCHAR},
+                        #{WeChat, mode=IN, jdbcType=VARCHAR},
+                        #{Address, mode=IN, jdbcType=VARCHAR},
+                        #{City, mode=IN, jdbcType=VARCHAR},
+                        #{RoleType, mode=IN, jdbcType=INTEGER},
+                        #{result, mode=OUT, jdbcType=INTEGER},
+                        #{UserID, mode=OUT, jdbcType=INTEGER}
+                        );
+    </select>
+
+    <!--  添加用户  -->
+    <select id="delUser" statementType="CALLABLE">
+        CALL p_deleteUser(  #{UserID, mode=IN, jdbcType=INTEGER},
+                            #{result, mode=OUT, jdbcType=INTEGER}
+                        );
+    </select>
+
+    <!--  更新用户  -->
+    <select id="updateUser" statementType="CALLABLE">
+        CALL p_updateUser(
+                        #{UserID, mode=IN, jdbcType=INTEGER},
+                        #{UserName, mode=IN, jdbcType=VARCHAR},
+                        #{Password, mode=IN, jdbcType=VARCHAR},
+                        #{BirthDate, mode=IN, jdbcType=VARCHAR},
+                        #{Gender, mode=IN, jdbcType=VARCHAR},
+                        #{Phone, mode=IN, jdbcType=VARCHAR},
+                        #{Email, mode=IN, jdbcType=VARCHAR},
+                        #{qq, mode=IN, jdbcType=VARCHAR},
+                        #{WeChat, mode=IN, jdbcType=VARCHAR},
+                        #{Address, mode=IN, jdbcType=VARCHAR},
+                        #{City, mode=IN, jdbcType=VARCHAR},
+                        #{RoleType, mode=IN, jdbcType=INTEGER},
+                        #{Photo, mode=IN, jdbcType=VARCHAR},
+                        #{result, mode=OUT, jdbcType=INTEGER}
+                        );
+    </select>
+
+    <!--  查询员工  -->
+    <select id="getUsers" resultType="com.xxx.server.pojo.User" >
+        SELECT
+            UserID,
+            UserName,
+            Password,
+            BirthDate,
+            Age,
+            Gender,
+            Phone,
+            Email,
+            QQ,
+            WeChat,
+            Address,
+            City,
+            Zip,
+            RoleType,
+            Photo,
+            Notes
+        FROM
+            t_user
+        <if test="null!=id">
+            WHERE
+            userid = #{id}
+        </if>
+        ORDER BY UserID;
+    </select>
+
+</mapper>

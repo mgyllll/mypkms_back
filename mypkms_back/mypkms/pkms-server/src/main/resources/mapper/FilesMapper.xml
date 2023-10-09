@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xxx.server.mapper.FilesMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.xxx.server.pojo.Files">
+        <id column="FileID" property="FileID" />
+        <result column="FileName" property="FileName" />
+        <result column="ResourceID" property="ResourceID" />
+        <result column="TypeID" property="TypeID" />
+        <result column="FileSize" property="FileSize" />
+        <result column="FilePath" property="FilePath" />
+        <result column="UploadTime" property="UploadTime" />
+        <result column="Description" property="Description" />
+    </resultMap>
+
+    <resultMap id="FileWithType" type="com.xxx.server.pojo.Files" extends="BaseResultMap">
+        <collection property="types" ofType="com.xxx.server.pojo.Types">
+            <id column="TypeID" property="TypeID" />
+            <result column="TypeName" property="TypeName" />
+            <result column="Suffix" property="Suffix" />
+            <result column="note" property="note" />
+        </collection>
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        FileID, FileName, ResourceID, TypeID, FileSize, FilePath, UploadTime, Description
+    </sql>
+
+    <!--  根据用户id查询角色列表  -->
+    <select id="getFilesByResourceId" resultMap="FileWithType">
+        SELECT
+            a.*,
+            b.*
+        FROM
+            t_files a,
+            t_types b
+        WHERE
+            a.TypeID = b.TypeID
+        AND
+            a.ResourceID=#{resourceId};
+    </select>
+
+    <!--  添加附件  -->
+    <select id="addFile" statementType="CALLABLE">
+       call p_addFile(  #{FileName, mode=IN, jdbcType=VARCHAR},
+                        #{ResourceID, mode=IN, jdbcType=BIGINT},
+                        #{FileSize, mode=IN, jdbcType=BIGINT},
+                        #{FilePath, mode=IN, jdbcType=VARCHAR},
+                        #{result, mode=OUT, jdbcType=INTEGER});
+    </select>
+</mapper>

@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xxx.server.mapper.CategoriesMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.xxx.server.pojo.Categories">
+        <id column="CategoryID" property="CategoryID" />
+        <result column="CayegoryName" property="CayegoryName" />
+        <result column="ParentNodeID" property="ParentNodeID" />
+        <result column="IsParentFlag" property="IsParentFlag" />
+        <result column="Level" property="Level" />
+        <result column="Ancester" property="Ancester" />
+    </resultMap>
+
+    <resultMap id="Categories" type="com.xxx.server.pojo.Categories" extends="BaseResultMap">
+        <collection property="children" ofType="com.xxx.server.pojo.Categories">
+            <id column="CategoryID1" property="CategoryID" />
+            <result column="CayegoryName1" property="CayegoryName" />
+            <result column="ParentNodeID1" property="ParentNodeID" />
+            <result column="IsParentFlag1" property="IsParentFlag" />
+            <result column="Level1" property="Level" />
+            <result column="Ancester1" property="Ancester" />
+        </collection>
+    </resultMap>
+
+    <resultMap id="CategoriesWithRole" type="com.xxx.server.pojo.Categories" extends="BaseResultMap">
+        <collection property="role" ofType="com.xxx.server.pojo.Role">
+            <id column="rtype" property="RoleType" />
+            <result column="rname" property="RoleName" />
+        </collection>
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        CategoryID, CayegoryName, ParentNodeID, IsParentFlag, Level, Ancester
+    </sql>
+
+    <!--根据用户id查询分类列表-->
+    <select id="getCategoriesByUserID" resultMap="Categories">
+        SELECT
+            a.*,
+            b.CategoryID AS categoryID1,
+            b.cayegoryName AS cayegoryName1,
+            b.parentNodeID AS parentNodeID1,
+            b.IsParentFlag AS IsParentFlag1,
+            b.level AS level1,
+            b.Ancester AS Ancester1
+        FROM
+            t_categories a,
+            t_categories b,
+            t_users_categories c
+        WHERE
+            a.CategoryID=b.ParentNodeID
+        AND
+            a.CategoryID=c.CategoryID
+        AND
+            UserID= #{Userid};
+    </select>
+
+    <!--根据角色获取菜单列表-->
+    <select id="getCategoriesByRoleType" resultMap="CategoriesWithRole">
+        SELECT
+        DISTINCT
+            b.*,
+            d.roletype as rtype,
+            d.rolename as rname
+        FROM
+            t_user a,
+            t_categories b,
+            t_users_categories c,
+            t_role d
+        WHERE
+            a.userID = c.userID
+        AND
+            b.categoryid = c.categoryid
+        AND
+            a.roletype = d.roletype
+        ORDER BY
+            b.categoryid;
+    </select>
+    
+    <!--  新增类别  -->
+    <select id="addCategory" statementType="CALLABLE">
+        call p_addCategory(#{ParentNodeID, mode=IN, jdbcType=VARCHAR},#{CayegoryName, mode=IN, jdbcType=VARCHAR},#{userID, mode=IN, jdbcType=INTEGER},
+    #{result, mode=OUT, jdbcType=INTEGER},#{CategoryID, mode=OUT, jdbcType=VARCHAR});
+    </select>
+
+    <!--  删除类别  -->
+    <select id="deleteCategory" statementType="CALLABLE">
+        call p_deleteCategory(#{CategoryID, mode=IN, jdbcType=VARCHAR},#{userID, mode=IN, jdbcType=INTEGER},
+    #{result, mode=OUT, jdbcType=INTEGER});
+    </select>
+
+    <select id="getCategories" resultType="com.xxx.server.pojo.Categories">
+        SElECT
+            *
+        FROM
+            t_categories
+        WHERE
+            categoryid
+        IN (SELECT categoryid from t_users_categories WHERE userID=#{userID})
+        ORDER BY  ancester, cast(categoryID as SIGNED)
+    </select>
+
+    <!-- 获取知识类别树 -->
+    <select id="getCategoryTree" resultType="com.xxx.server.pojo.Categories">
+        select
+            '0' as text1,
+            '育儿知识类别' as text2,
+            concat('知识总数：', (select count(*) from t_resources where userID = #{userID})) as text3,
+            concat('父节点：', '') as text4,
+            1 as zb,
+            '-1' as ParentNodeID
+        union all
+        select
+            a.categoryid as text1,
+            a.CayegoryName as text2,
+            concat('知识总数：', (select count(*) from t_resources where CategoryID like concat(a.categoryid, '%') and userID = #{userID})) as text3,
+            concat('父节点：', a.ParentNodeID) as text4,
+            a.IsParentFlag as zb,
+            a.ParentNodeID
+        from
+            t_categories a
+        where
+            a.categoryID in (select categoryID from t_users_categories where userID = #{userID});
+    </select>
+
+</mapper>
